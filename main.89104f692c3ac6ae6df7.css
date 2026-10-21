@@ -1,0 +1,365 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-image: url(/GryzuSlot/682f9a801b078d52dc99.svg);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ГЛОБАЛЬНОЕ ЗАТЕМНЕНИЕ И РАЗМЫТИЕ ФОНА */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+body.has-win::before {
+  opacity: 1;
+}
+
+@media only screen and (max-width: 900px) {
+  body {
+    background-image: url(/GryzuSlot/5f0d0df2a4459dd25df7.svg);
+    background-position: center center;
+  }
+}
+
+#game-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+#slot {
+  position: relative;
+  z-index: 10;
+}
+
+#game-area {
+  position: relative;
+  width: min(85vw, 85vh);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* FLEX ДЛЯ КОРРЕКТНОЙ РАБОТЫ JS-АНИМАЦИИ */
+#reels {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  position: relative;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* FLEX: 1 1 0% ДЛЯ ИДЕАЛЬНО РОВНЫХ КОЛОНОК БЕЗ ЗАЗОРОВ */
+.reel {
+  flex: 1 1 0%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.reel > .icons {
+  position: relative;
+  top: 0;
+}
+
+/* Эти -3px и +6px критически важны для математики в Reel.js */
+.reel > .icons > img {
+  display: block;
+  width: calc(100% + 6px); 
+  margin: -3px 0 0 -3px; 
+  height: auto;
+  transform: translate3d(0, 0, 0);
+}
+
+/* --- БОКОВЫЕ КНОПКИ (Десктоп) --- */
+#side-controls {
+  position: absolute;
+  left: calc(50% + min(42.5vw, 42.5vh) + 30px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  z-index: 20;
+}
+
+.main-btn {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  background-image: url(/GryzuSlot/4a6996570f6592e86196.svg);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 0px rgba(0,0,0,0.2)) drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+  transition: all 0.1s;
+  padding: 0;
+}
+
+.main-btn:hover { 
+  filter: drop-shadow(0 6px 0px rgba(0,0,0,0.2)) drop-shadow(0 10px 15px rgba(0,0,0,0.5)) brightness(1.1); 
+}
+
+.main-btn:active {
+  transform: translateY(6px);
+  filter: drop-shadow(0 0px 0px rgba(0,0,0,0.2)) drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+}
+
+.main-btn:disabled {
+  filter: grayscale(100%) opacity(0.7);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auto-btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: none;
+  background-color: #95a5a6;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #7f8c8d, 0 8px 15px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+}
+
+.auto-btn svg { 
+  width: 100%; 
+  height: 100%; 
+}
+
+.auto-btn:hover { 
+  background-color: #7f8c8d; 
+}
+
+.auto-btn.active {
+  background-color: #2ecc71; 
+  box-shadow: 0 4px 0 #27ae60, 0 8px 15px rgba(0,0,0,0.2);
+}
+
+/* --- ОВЕРЛЕЙ ВЫИГРЫША --- */
+#win-overlay {
+  position: absolute;
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+#win-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%; 
+  height: 100%;
+  position: absolute;
+  top: 0; 
+  left: 0;
+}
+
+.win-cell {
+  position: relative;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  z-index: 1;
+}
+
+.win-cell.dimmed-all {
+  background: rgba(0, 0, 0, 0.75) !important; 
+  z-index: 2;
+}
+
+.win-cell.active {
+  background: transparent !important; 
+  z-index: 10;
+}
+
+#win-lines, #line-scores {
+  position: absolute;
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+}
+
+.win-line {
+  position: absolute;
+  height: 6px;
+  background: #f1c40f;
+  box-shadow: 0 0 10px #f1c40f, 0 0 20px #f1c40f;
+  border-radius: 3px;
+  transform-origin: 0 50%;
+  transform: rotate(var(--angle)) scaleX(0);
+}
+
+.win-line.active {
+  transform: rotate(var(--angle)) scaleX(1);
+  transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); 
+}
+
+/* Очки на конкретной линии (+10, +50 и т.д.) */
+.line-score {
+  position: absolute;
+  font-size: 50px;
+  font-weight: 900;
+  color: #fff;
+  /* Убрали обводку, добавили мощную тень для читаемости на любой картинке */
+  text-shadow: 0px 3px 5px #000, 0px 0px 15px rgba(0, 0, 0, 0.8);
+  transform: translate(-50%, -50%) scale(0.5);
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 25;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.line-score.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* --- ФИНАЛЬНЫЙ ЭКРАН ВЫИГРЫША (С ПЛАШКОЙ) --- */
+#center-win {
+  position: absolute;
+  top: 50%; 
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  
+  font-size: 65px; 
+  font-weight: 900;
+  color: #f1c40f;
+  
+  /* НОВАЯ ТЕМНАЯ ПЛАШКА */
+  background-color: rgba(18, 18, 18, 0.8);
+  padding: 20px 50px;
+  border-radius: 20px;
+  
+  /* Красивая тень для самой плашки, чтобы она выделялась */
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 30px rgba(241, 196, 15, 0.4);
+  
+  /* Легкая тень для текста, чтобы он стал объемным */
+  text-shadow: 0px 4px 10px rgba(0, 0, 0, 1);
+    
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 30;
+  text-align: center;
+  line-height: 1.1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#center-win.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#slot.inverted .reel { 
+  transform: scaleY(-1); 
+}
+
+#slot.inverted .reel > .icons > img { 
+  transform: scaleY(-1); 
+}
+
+/* =========================================
+   АДАПТИВ ДЛЯ ТЕЛЕФОНОВ
+   ========================================= */
+@media (max-width: 900px) {
+  #game-wrapper {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; 
+    gap: 30px;
+    padding: 0; 
+  }
+  
+  #game-area {
+    width: 85vw; 
+    max-width: 500px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto; 
+  }
+
+  #side-controls {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    flex-direction: row;
+    justify-content: center; 
+    align-items: center;
+    width: 100%; 
+    height: 125px; 
+    margin: 0 auto;
+  }
+
+  .main-btn { 
+    width: 125px; 
+    height: 125px; 
+    margin: 0;
+  }
+  
+  .auto-btn { 
+    position: absolute;
+    left: calc(50% + 77.5px); 
+    top: 50%;
+    transform: translateY(-50%); 
+    width: 60px; 
+    height: 60px; 
+    padding: 12px;
+  }
+  
+  #center-win { 
+    font-size: 40px; 
+    padding: 15px 30px; /* Уменьшили плашку для телефонов */
+    border-radius: 15px;
+  }
+  
+  .line-score { 
+    font-size: 35px; 
+  }
+}
